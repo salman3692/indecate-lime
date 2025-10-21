@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>INDECATE-Lime (WebGL Version - Auto CSV)</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://unpkg.com/regl-parcoords/build/regl-parcoords.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Familjen Grotesk', sans-serif;
+            background-color: white;
+            margin: 20px;
+        }
+        #plot {
+            width: 100%;
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color:#003366;">INDECATE-Lime (WebGL Fast Version - Auto CSV)</h1>
+    <div id="plot"></div>
+
+    <script>
+    const techList = ['NG', 'BioCH4', 'Biomass', 'Hydrogen', 'Plasma'];
+
+    function parseConfiguration(conf) {
+        let tech = 'Unknown';
+        let capture = 'No Capture';
+        if (conf.includes('Oxy_CC')) {
+            capture = 'Oxy Capture';
+        } else if (conf.includes('_CC')) {
+            capture = 'MEA Capture';
+        }
+        if (conf.includes('NG')) tech = 'NG';
+        else if (conf.includes('BioCH4')) tech = 'BioCH4';
+        else if (conf.includes('Biomass')) tech = 'Biomass';
+        else if (conf.includes('H2')) tech = 'Hydrogen';
+        else if (conf.includes('Plasma')) tech = 'Plasma';
+        return { tech, capture };
+    }
+
+    // Hardcoded link to CSV file (in the same folder)
+    const csvFilePath = "resuls_lime_combiprices_clean.csv";  // Change this if you put CSV somewhere else!
+
+    d3.csv(csvFilePath).then(function(parsedData) {
+        const processedData = parsedData.map(row => {
+            const confParsed = parseConfiguration(row.configuration || "");
+            return {
+                cEE: +row.cEE,
+                cH2: +row.cH2,
+                cNG: +row.cNG,
+                cCO2: +row.cCO2,
+                cBioCH4: +row.cBioCH4,
+                cBiomass: +row.cBiomass,
+                Technology: confParsed.tech,
+                Capture: confParsed.capture
+            };
+        });
+
+        const dimensions = [
+            { name: "cEE", type: "number", scale: d3.scaleLinear().domain(d3.extent(processedData, d => d.cEE)) },
+            { name: "cH2", type: "number", scale: d3.scaleLinear().domain(d3.extent(processedData, d => d.cH2)) },
+            { name: "cNG", type: "number", scale: d3.scaleLinear().domain(d3.extent(processedData, d => d.cNG)) },
+            { name: "cCO2", type: "number", scale: d3.scaleLinear().domain(d3.extent(processedData, d => d.cCO2)) },
+            { name: "cBioCH4", type: "number", scale: d3.scaleLinear().domain(d3.extent(processedData, d => d.cBioCH4)) },
+            { name: "cBiomass", type: "number", scale: d3.scaleLinear().domain(d3.extent(processedData, d => d.cBiomass)) },
+            { name: "Technology", type: "string", scale: d3.scalePoint().domain(techList) },
+            { name: "Capture", type: "string", scale: d3.scalePoint().domain(["No Capture", "MEA Capture", "Oxy Capture"]) }
+        ];
+
+        const parcoords = reglParcoords("#plot")
+            .data(processedData)
+            .dimensions(dimensions)
+            .margin({ top: 40, left: 50, bottom: 40, right: 50 })
+            .mode("queue")
+            .bundleDimension("Technology")
+            .color(d => {
+                switch (d.Technology) {
+                    case 'NG': return [255, 0, 0];
+                    case 'BioCH4': return [0, 128, 0];
+                    case 'Biomass': return [139, 69, 19];
+                    case 'Hydrogen': return [0, 0, 255];
+                    case 'Plasma': return [255, 165, 0];
+                    default: return [100, 100, 100];
+                }
+            })
+            .render()
+            .brushMode("1D-axes");
+    }).catch(function(error) {
+        console.error("Error loading the CSV file:", error);
+    });
+    </script>
+</body>
+</html>
