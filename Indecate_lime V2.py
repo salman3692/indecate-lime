@@ -237,3 +237,8 @@ def update_plots(selected_techs, cEE_min, cEE_max, cH2_min, cH2_max, cNG_min, cN
 # -----------------------------
 if __name__ == '__main__':
     app.run(debug=True)
+    
+# # for deployment
+# if __name__ == '__main__':
+#     port = int(os.environ.get('PORT', 8050))
+#     app.run_server(debug=True, host='0.0.0.0', port=port)
